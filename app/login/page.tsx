@@ -34,7 +34,17 @@ export default function LoginPage() {
         setStatusMessage('Logged in successfully. Redirecting…');
         router.push('/');
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const siteUrl =
+          process.env.NEXT_PUBLIC_SITE_URL ??
+          (typeof window !== 'undefined' ? window.location.origin : undefined);
+
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: siteUrl ? new URL('/login', siteUrl).toString() : undefined
+          }
+        });
         if (error) {
           throw error;
         }
