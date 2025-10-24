@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { useAuth } from '@/lib/authContext';
-import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '../lib/authContext';
+import { supabase } from '../lib/supabaseClient';
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 

@@ -3,8 +3,8 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAuth } from '@/lib/authContext';
-import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '../lib/authContext';
+import { supabase } from '../lib/supabaseClient';
 
 type Card = {
   id: string;
@@ -176,145 +176,151 @@ export default function HomePage() {
   }, [selectedCards, session?.access_token, user]);
 
   return (
-    <section className="home-page">
-      <div className="hero">
-        <div className="hero-copy">
-          <span className="hero-kicker">The One Take Game</span>
-          <h1 className="hero-title">Bameo</h1>
-          <p className="hero-description">
-            Step into a neon spotlight, pull a card, and let the persona guide a one-take performance.
-            Bameo pairs your imagination with a teleprompter-ready script.
-          </p>
-          <div className="hero-buttons">
-            <button type="button" onClick={handlePlayClick} disabled={isLoadingCards}>
-              Play
-            </button>
-            <button type="button" className="btn-secondary" onClick={openRules}>
-              Rules
-            </button>
+    <div className="page-shell">
+      <div className="centered-container">
+        <section className="hero-panel neon-surface">
+          <div className="hero-content">
+            <span className="hero-kicker">The One Take Game</span>
+            <h1>Bameo</h1>
+            <p className="hero-description">
+              Step into a neon spotlight, pull a card, and let the persona guide your one-take performance.
+              Bameo pairs your imagination with a teleprompter-ready script.
+            </p>
+            <div className="hero-actions">
+              <button type="button" className="btn-magenta" onClick={handlePlayClick} disabled={isLoadingCards}>
+                Play
+              </button>
+              <button type="button" className="btn-ghost" onClick={openRules}>
+                Rules
+              </button>
+            </div>
           </div>
-        </div>
+          <div className="hero-highlight">
+            <span className="highlight-pill">No retakes</span>
+            <h2>Shuffle. Perform. Share.</h2>
+            <p>
+              Curate the perfect persona deck, hit record, and bring your story to life in a single take. Neon energy
+              included.
+            </p>
+            <div className="hero-status">
+              <strong>
+                {selectedCards.length === 0
+                  ? 'Ready to draw?'
+                  : `${selectedCards.length} card${selectedCards.length > 1 ? 's' : ''} locked in`}
+              </strong>
+              <span>
+                {selectedCards.length === 0
+                  ? 'Pick a few prompts to build your teleprompter.'
+                  : 'Remix the deck until your character clicks.'}
+              </span>
+            </div>
+          </div>
+        </section>
 
-        <div className="hero-visual">
-          <span className="badge">No retakes</span>
-          <h2>Shuffle. Perform. Share.</h2>
-          <p>
-            Curate the perfect persona deck, hit record, and bring your story to life in a single take.
-            Neon energy included.
-          </p>
-          <div className="hero-status">
+        <section className="cards-panel neon-surface" ref={cardsSectionRef}>
+          <div className="panel-heading">
+            <h2>Flip Your Deck</h2>
+            <p>Choose the energies, quirks, and story beats that will shape your performance.</p>
+          </div>
+
+          {isLoadingCards ? (
+            <p className="panel-feedback">Loading cards…</p>
+          ) : cardsError ? (
+            <p className="panel-feedback error">{cardsError}</p>
+          ) : cards.length === 0 ? (
+            <p className="panel-feedback">No cards have been added yet.</p>
+          ) : (
+            <ul className="card-grid" role="list">
+              {cards.map((card) => {
+                const isSelected = selectedCardIds.includes(card.id);
+                return (
+                  <li key={card.id} className={`card-tile${isSelected ? ' is-selected' : ''}`}>
+                    {card.image_url ? (
+                      <Image
+                        className="card-image"
+                        src={card.image_url}
+                        alt={card.title}
+                        width={400}
+                        height={300}
+                        sizes="(max-width: 768px) 100vw, 240px"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="card-placeholder">No image</div>
+                    )}
+                    <div className="card-body">
+                      <h3>{card.title}</h3>
+                      <button
+                        type="button"
+                        className={`card-toggle btn-magenta${isSelected ? ' is-active' : ''}`}
+                        onClick={() => toggleCardSelection(card.id)}
+                        aria-pressed={isSelected}
+                      >
+                        {isSelected ? 'Remove from deck' : 'Add to deck'}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section className="action-panel neon-surface">
+          <div className="panel-heading">
+            <h2>Lock the take</h2>
+            <p>
+              When the deck feels right, generate a Bameo teleprompter video complete with your selected characters and
+              prompts.
+            </p>
+          </div>
+
+          <div className="selected-summary">
             <strong>
               {selectedCards.length === 0
-                ? 'Ready to draw?'
-                : `${selectedCards.length} card${selectedCards.length > 1 ? 's' : ''} ready`}
+                ? 'No cards selected yet'
+                : `Deck ready: ${selectedCards.length} card${selectedCards.length > 1 ? 's' : ''}`}
             </strong>
-            <span>
+            <p>
               {selectedCards.length === 0
-                ? 'Pick a few prompts to build your teleprompter.'
-                : 'Keep remixing the deck until your character clicks.'}
-            </span>
+                ? 'Choose a few cards to start crafting your scene.'
+                : 'You can still add or remove cards before generating the video.'}
+            </p>
+            {selectedCards.length > 0 && (
+              <div className="selected-chips" role="list">
+                {selectedCards.slice(0, 4).map((card) => (
+                  <span className="selected-chip" role="listitem" key={card.id}>
+                    {card.title}
+                  </span>
+                ))}
+                {selectedCards.length > 4 && (
+                  <span className="selected-chip" role="listitem">
+                    +{selectedCards.length - 4} more
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      </div>
 
-      <div className="cards-section" ref={cardsSectionRef}>
-        <div className="section-header">
-          <h2>Flip Your Deck</h2>
-          <p>Choose the energies, quirks, and story beats that will shape your performance.</p>
-        </div>
+          <button
+            type="button"
+            className="btn-magenta generate-button"
+            onClick={handleGenerate}
+            disabled={isGenerating || selectedCards.length === 0 || isLoadingCards}
+          >
+            {isGenerating
+              ? 'Generating…'
+              : selectedCards.length === 0
+              ? 'Select cards to generate a video'
+              : `Generate video (${selectedCards.length} card${selectedCards.length > 1 ? 's' : ''})`}
+          </button>
 
-        {isLoadingCards ? (
-          <p className="card-feedback">Loading cards…</p>
-        ) : cardsError ? (
-          <p className="card-feedback error">{cardsError}</p>
-        ) : cards.length === 0 ? (
-          <p className="card-feedback">No cards have been added yet.</p>
-        ) : (
-          <ul className="card-grid">
-            {cards.map((card) => {
-              const isSelected = selectedCardIds.includes(card.id);
-              return (
-                <li
-                  key={card.id}
-                  className={`card-tile${isSelected ? ' is-selected' : ''}`}
-                >
-                  {card.image_url ? (
-                    <Image
-                      className="card-image"
-                      src={card.image_url}
-                      alt={card.title}
-                      width={400}
-                      height={300}
-                      sizes="(max-width: 768px) 100vw, 240px"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="card-placeholder">No image</div>
-                  )}
-                  <div className="card-body">
-                    <h3>{card.title}</h3>
-                    <button
-                      type="button"
-                      className={`card-toggle${isSelected ? ' is-active' : ''}`}
-                      onClick={() => toggleCardSelection(card.id)}
-                      aria-pressed={isSelected}
-                    >
-                      {isSelected ? 'Remove from deck' : 'Add to deck'}
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-
-      <div className="action-panel">
-        <h3>Lock the take</h3>
-        <p>
-          When the deck feels right, generate a Bameo teleprompter video complete with your selected
-          characters and prompts.
-        </p>
-        <div className="selected-summary">
-          <strong>
-            {selectedCards.length === 0
-              ? 'No cards selected yet'
-              : `Deck ready: ${selectedCards.length} card${selectedCards.length > 1 ? 's' : ''}`}
-          </strong>
-          <p>
-            {selectedCards.length === 0
-              ? 'Choose a few cards to start crafting your scene.'
-              : 'You can still add or remove cards before generating the video.'}
-          </p>
-          {selectedCards.length > 0 && (
-            <div className="selected-chips">
-              {selectedCards.slice(0, 4).map((card) => (
-                <span className="selected-chip" key={card.id}>
-                  {card.title}
-                </span>
-              ))}
-              {selectedCards.length > 4 && (
-                <span className="selected-chip">+{selectedCards.length - 4} more</span>
-              )}
-            </div>
+          {statusMessage && (
+            <span className={`status-message${statusIsError ? ' error' : ''}`} role="status">
+              {statusMessage}
+            </span>
           )}
-        </div>
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating || selectedCards.length === 0 || isLoadingCards}
-        >
-          {isGenerating
-            ? 'Generating…'
-            : selectedCards.length === 0
-            ? 'Select cards to generate a video'
-            : `Generate video (${selectedCards.length} card${selectedCards.length > 1 ? 's' : ''})`}
-        </button>
-        {statusMessage && (
-          <span className={`status-message${statusIsError ? ' error' : ''}`} role="status">
-            {statusMessage}
-          </span>
-        )}
+        </section>
       </div>
 
       {isRulesOpen && (
@@ -325,7 +331,7 @@ export default function HomePage() {
           aria-labelledby="rules-title"
           onClick={closeRules}
         >
-          <div className="rules-card" onClick={(event) => event.stopPropagation()}>
+          <div className="rules-card neon-surface" onClick={(event) => event.stopPropagation()}>
             <h2 id="rules-title">Bameo Rules</h2>
             <ul>
               <li>One take only—pause if you must, but there are no retakes or redos.</li>
@@ -333,12 +339,12 @@ export default function HomePage() {
               <li>Keep planning light. Let the cards guide the performance.</li>
               <li>Most importantly: have fun and share the chaos.</li>
             </ul>
-            <button type="button" onClick={closeRules}>
+            <button type="button" className="btn-magenta" onClick={closeRules}>
               Let&apos;s play
             </button>
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }

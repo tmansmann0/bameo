@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { useAuth } from '@/lib/authContext';
-import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '../../lib/authContext';
+import { supabase } from '../../lib/supabaseClient';
 
 type VideoRecord = {
   id: string;

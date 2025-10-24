@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import React from 'react';
 import { Lobster, Montserrat } from 'next/font/google';
 
-import { HeaderNav } from '@/components/HeaderNav';
-import { AuthProvider } from '@/lib/authContext';
+import { HeaderNav } from '../components/HeaderNav';
+import { AuthProvider } from '../lib/authContext';
 
 const headingFont = Lobster({
   weight: '400',
