@@ -8,11 +8,13 @@ import { useAuth } from '../../lib/authContext';
 type CardFormState = {
   title: string;
   imageUrl: string;
+  cardType: 'character' | 'situation';
 };
 
 const initialFormState: CardFormState = {
   title: '',
-  imageUrl: ''
+  imageUrl: '',
+  cardType: 'character'
 };
 
 export default function AdminPage() {
@@ -42,7 +44,8 @@ export default function AdminPage() {
       const { error } = await supabase.from('cards').insert([
         {
           title: formState.title,
-          image_url: formState.imageUrl
+          image_url: formState.imageUrl,
+          card_type: formState.cardType
         }
       ]);
 
@@ -89,6 +92,23 @@ export default function AdminPage() {
           maxWidth: '480px'
         }}
       >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <label htmlFor="cardType">Card type</label>
+          <select
+            id="cardType"
+            name="cardType"
+            required
+            value={formState.cardType}
+            onChange={(event) =>
+              setFormState((prev) => ({ ...prev, cardType: event.target.value as CardFormState['cardType'] }))
+            }
+            style={{ padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+          >
+            <option value="character">Character</option>
+            <option value="situation">Situation</option>
+          </select>
+        </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <label htmlFor="title">Card title</label>
           <input
