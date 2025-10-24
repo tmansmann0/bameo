@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
-import { useAuth } from '@/lib/authContext';
-import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '../../lib/authContext';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function LoginPage() {
   const router = useRouter();

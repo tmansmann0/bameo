@@ -2,8 +2,8 @@
 
 import { FormEvent, useState } from 'react';
 
-import { supabase } from '@/lib/supabaseClient';
-import { useAuth } from '@/lib/authContext';
+import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../lib/authContext';
 
 type CardFormState = {
   title: string;
