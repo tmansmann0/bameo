@@ -28,22 +28,12 @@ export function HeaderNav() {
   };
 
   return (
-    <header style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb' }}>
-      <nav
-        style={{
-          display: 'flex',
-          gap: '1rem',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          margin: '0 auto',
-          padding: '1rem 2rem',
-          maxWidth: '960px'
-        }}
-      >
-        <Link href="/" style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+    <header className="site-header">
+      <nav className="site-nav">
+        <Link href="/" className="brand">
           Bameo
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="site-nav-links">
           <Link href="/" aria-current={pathname === '/' ? 'page' : undefined}>
             Home
           </Link>
@@ -63,8 +53,8 @@ export function HeaderNav() {
             </Link>
           )}
           {user && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '0.9rem', color: '#374151' }}>Welcome, {user.email}</span>
+            <div className="auth-actions">
+              <span>Welcome, {user.email}</span>
               <button type="button" onClick={handleSignOut} disabled={isSigningOut}>
                 {isSigningOut ? 'Signing out…' : 'Sign out'}
               </button>
