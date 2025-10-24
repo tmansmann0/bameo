@@ -2,6 +2,8 @@
 
 import { FormEvent, useState } from 'react';
 
+import { supabase } from '@/lib/supabaseClient';
+
 type CardFormState = {
   title: string;
   imageUrl: string;
@@ -14,14 +16,38 @@ const initialFormState: CardFormState = {
 
 export default function AdminPage() {
   const [formState, setFormState] = useState<CardFormState>(initialFormState);
-  const [submittedCards, setSubmittedCards] = useState<CardFormState[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Placeholder for future Supabase mutation.
-    setSubmittedCards((prev) => [...prev, formState]);
-    setFormState(initialFormState);
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSuccessMessage(null);
+
+    try {
+      const { error } = await supabase.from('cards').insert([
+        {
+          title: formState.title,
+          image_url: formState.imageUrl
+        }
+      ]);
+
+      if (error) {
+        throw error;
+      }
+
+      // Reset the form and show feedback when the insert succeeds.
+      setFormState(initialFormState);
+      setSuccessMessage('Card saved successfully.');
+    } catch (error) {
+      console.error('Failed to insert card into Supabase.', error);
+      setSubmitError('Unable to save the card. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,30 +98,22 @@ export default function AdminPage() {
           />
         </div>
 
-        <button type="submit">Save card</button>
-      </form>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving…' : 'Save card'}
+        </button>
 
-      {submittedCards.length > 0 && (
-        <div>
-          <h2>Recently added (local state)</h2>
-          <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: '0.75rem' }}>
-            {submittedCards.map((card, index) => (
-              <li
-                key={`${card.title}-${index}`}
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: '0.75rem',
-                  border: '1px solid #e5e7eb',
-                  padding: '1.5rem'
-                }}
-              >
-                <strong>{card.title}</strong>
-                <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>{card.imageUrl}</div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {submitError && (
+          <p role="alert" style={{ color: '#dc2626', margin: 0 }}>
+            {submitError}
+          </p>
+        )}
+
+        {successMessage && (
+          <p role="status" style={{ color: '#16a34a', margin: 0 }}>
+            {successMessage}
+          </p>
+        )}
+      </form>
     </section>
   );
 }
