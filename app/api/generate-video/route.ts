@@ -7,6 +7,10 @@ import path from 'path';
 import os from 'os';
 import { randomUUID } from 'crypto';
 
+import type { User } from '@supabase/supabase-js';
+
+import { supabaseAdmin } from '@/lib/supabaseServer';
+
 if (ffmpegStatic) {
   ffmpeg.setFfmpegPath(ffmpegStatic);
 }
@@ -71,6 +75,7 @@ async function createSlideImage(cardTitle: string, tempDir: string, index: numbe
 
 export async function POST(request: Request) {
   let tempDir: string | null = null;
+  let authenticatedUser: User | null = null;
 
   try {
     const body = await request.json().catch(() => null);
@@ -81,6 +86,23 @@ export async function POST(request: Request) {
         { error: 'No cards were provided for video generation.' },
         { status: 400 }
       );
+    }
+
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const accessToken = authHeader.slice('Bearer '.length);
+      try {
+        const {
+          data: { user },
+          error: authError
+        } = await supabaseAdmin.auth.getUser(accessToken);
+        if (authError) {
+          console.warn('Unable to verify Supabase access token.', authError);
+        }
+        authenticatedUser = user ?? null;
+      } catch (verificationError) {
+        console.error('Unexpected error while verifying Supabase access token.', verificationError);
+      }
     }
 
     const normalizedCards = cards.map((card, index) => ({
@@ -122,6 +144,43 @@ export async function POST(request: Request) {
     });
 
     const videoBuffer = await fs.readFile(outputVideoPath);
+
+    if (authenticatedUser) {
+      const storagePath = `${authenticatedUser.id}/${Date.now()}-${randomUUID()}.mp4`;
+
+      try {
+        // Store the generated video in Supabase Storage so authenticated users can revisit it.
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('videos')
+          .upload(storagePath, videoBuffer, {
+            contentType: 'video/mp4',
+            upsert: false
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        // Persist a database record linking the video to the user for easy retrieval later.
+        const { error: insertError } = await supabaseAdmin.from('videos').insert({
+          user_id: authenticatedUser.id,
+          file_path: storagePath
+        });
+
+        if (insertError) {
+          throw insertError;
+        }
+      } catch (persistenceError) {
+        console.error('Failed to save the generated video for the authenticated user.', persistenceError);
+        return NextResponse.json(
+          {
+            error:
+              'The video was generated but could not be saved to your account. Please try again or download manually.'
+          },
+          { status: 500 }
+        );
+      }
+    }
 
     return new NextResponse(videoBuffer, {
       headers: {

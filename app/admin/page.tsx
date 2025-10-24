@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/authContext';
 
 type CardFormState = {
   title: string;
@@ -15,13 +16,23 @@ const initialFormState: CardFormState = {
 };
 
 export default function AdminPage() {
+  const { user, isLoading } = useAuth();
   const [formState, setFormState] = useState<CardFormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Only the configured admin email can create new cards from this page.
+  const isAdmin =
+    !!user && (!!process.env.NEXT_PUBLIC_ADMIN_EMAIL ? user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL : false);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!isAdmin) {
+      setSubmitError('You must be an admin to add cards.');
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -56,6 +67,14 @@ export default function AdminPage() {
         <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Admin</h1>
         <p>Manage the deck of cards available for storytelling videos.</p>
       </header>
+
+      {!isLoading && !user && (
+        <p>You must be logged in as the admin to access this page.</p>
+      )}
+
+      {!isLoading && user && !isAdmin && (
+        <p>You do not have permission to add or edit cards.</p>
+      )}
 
       <form
         onSubmit={handleSubmit}
@@ -98,7 +117,7 @@ export default function AdminPage() {
           />
         </div>
 
-        <button type="submit" disabled={isSubmitting}>
+        <button type="submit" disabled={isSubmitting || !isAdmin}>
           {isSubmitting ? 'Saving…' : 'Save card'}
         </button>
 

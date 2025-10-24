@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '@/lib/authContext';
 import { supabase } from '@/lib/supabaseClient';
 
 type Card = {
@@ -18,6 +19,7 @@ export default function HomePage() {
   const [isLoadingCards, setIsLoadingCards] = useState(true);
   const [cardsError, setCardsError] = useState<string | null>(null);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
+  const { session, user } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -98,7 +100,14 @@ export default function HomePage() {
       const response = await fetch('/api/generate-video', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(session?.access_token
+            ? {
+                // When a user is logged in we forward their access token so the API route can
+                // authenticate them and persist the generated video to their account.
+                Authorization: `Bearer ${session.access_token}`
+              }
+            : {})
         },
         body: JSON.stringify({
           cards: selectedCards.map(({ id, title, image_url }) => ({ id, title, image_url }))
@@ -129,7 +138,11 @@ export default function HomePage() {
       window.URL.revokeObjectURL(downloadUrl);
 
       setStatusIsError(false);
-      setStatusMessage('Video generated! Your download should begin automatically.');
+      setStatusMessage(
+        user
+          ? 'Video generated and saved to your library! Your download should begin automatically.'
+          : 'Video generated! Your download should begin automatically.'
+      );
     } catch (error) {
       console.error('Video generation failed.', error);
       setStatusIsError(true);
@@ -137,7 +150,7 @@ export default function HomePage() {
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedCards]);
+  }, [selectedCards, session?.access_token, user]);
 
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -231,7 +244,10 @@ export default function HomePage() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: '340px' }}>
-        <button onClick={handleGenerate} disabled={isGenerating || selectedCards.length === 0}>
+        <button
+          onClick={handleGenerate}
+          disabled={isGenerating || selectedCards.length === 0 || isLoadingCards}
+        >
           {isGenerating
             ? 'Generating…'
             : selectedCards.length === 0
